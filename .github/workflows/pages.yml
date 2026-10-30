@@ -25,6 +25,8 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - name: Create Supabase config
         run: |
           printf 'window.AZBTI_SUPABASE = { url: "%s", anonKey: "%s" };\n' "${{ secrets.SUPABASE_URL }}" "${{ secrets.SUPABASE_ANON_KEY }}" > supabase-config.js
