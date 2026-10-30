@@ -19,6 +19,35 @@ data.registry = data.registry || initialData.registry;
 data.stock = data.stock || initialData.stock;
 data.activity = data.activity || [];
 const save = () => localStorage.setItem('azbti-data', JSON.stringify(data));
+const cloudSettings = window.AZBTI_SUPABASE || {};
+const cloud = cloudSettings.url && cloudSettings.anonKey && window.supabase ? window.supabase.createClient(cloudSettings.url, cloudSettings.anonKey) : null;
+let cloudUser = null;
+const kindNames = { sheep:'الغنم', chicken:'الدجاج', camel:'النوق', trees:'الأشجار' };
+
+async function recordActivity(icon, message) {
+  data.activity.unshift({ icon, text:message, time:'الآن' });
+  if (cloud && cloudUser) await cloud.from('activity').insert({ icon, message, created_by:cloudUser.id });
+}
+async function loadCloudData() {
+  if (!cloud || !cloudUser) return;
+  const [animals, tasks, stock, activity] = await Promise.all([
+    cloud.from('animals').select('*').order('created_at', { ascending:false }),
+    cloud.from('daily_tasks').select('*').order('created_at'),
+    cloud.from('stock_items').select('*').order('updated_at', { ascending:false }),
+    cloud.from('activity').select('*').order('created_at', { ascending:false }).limit(20)
+  ]);
+  if (animals.error || tasks.error || stock.error || activity.error) return;
+  if (animals.data.length) {
+    data.animals = { sheep:0, chicken:0, camel:0, trees:data.animals.trees || 0, male:0, female:0, young:0 };
+    data.registry = animals.data.map(a => ({ icon:{ sheep:'🐑', chicken:'🐔', camel:'🐪' }[a.kind], name:a.name, detail:a.category === 'male' ? 'ذكر' : a.category === 'female' ? 'أنثى' : 'صغير' }));
+    animals.data.forEach(a => { data.animals[a.kind]++; data.animals[a.category]++; });
+  }
+  if (tasks.data.length) data.tasks = tasks.data.map(t => ({ id:t.id, text:t.title, time:t.task_time, done:t.is_done }));
+  if (stock.data.length) data.stock = stock.data.map(s => ({ id:s.id, name:s.name, amount:s.amount, percent:s.remaining_percent }));
+  if (activity.data.length) data.activity = activity.data.map(a => ({ icon:a.icon, text:a.message, time:new Date(a.created_at).toLocaleDateString('ar-SA') }));
+  save(); render();
+}
+function updateLoginButton() { document.querySelector('#loginButton').textContent = cloudUser ? 'تسجيل الخروج' : 'تسجيل الدخول'; }
 
 function renderStats() {
   const stats = [{ key:'sheep', icon:'🐑', label:'الغنم', value:data.animals.sheep }, { key:'chicken', icon:'🐔', label:'الدجاج', value:data.animals.chicken }, { key:'camel', icon:'🐪', label:'النوق', value:data.animals.camel }, { key:'trees', icon:'🌴', label:'النخل والأشجار', value:data.animals.trees }, { icon:'👥', label:'الذكور والإناث', value:`${data.animals.male} / ${data.animals.female}` }];
@@ -37,9 +66,13 @@ function renderActivity() { document.querySelector('#activity').innerHTML = data
 function render() { renderStats(); renderTasks(); renderStock(); renderRegistry(); renderActivity(); }
 
 document.querySelector('#addAnimalButton').addEventListener('click', () => document.querySelector('#addAnimalDialog').showModal());
-document.querySelector('#animalForm').addEventListener('submit', e => { const type = document.querySelector('#animalType').value; const category = document.querySelector('#animalCategory').value; const name = document.querySelector('#animalName').value.trim() || 'حيوان جديد'; data.animals[type]++; data.animals[category]++; const icons = { sheep:'🐑', chicken:'🐔', camel:'🐪' }; data.registry.unshift({ icon:icons[type], name, detail:`${category === 'male' ? 'ذكر' : category === 'female' ? 'أنثى' : 'صغير'} · أضيف الآن` }); data.activity.unshift({ icon:'➕', text:`تمت إضافة ${name} للسجل`, time:'الآن' }); document.querySelector('#animalName').value = ''; save(); render(); });
-document.querySelector('#clearActivity').addEventListener('click', () => { data.activity = []; save(); renderActivity(); });
+document.querySelector('#animalForm').addEventListener('submit', async () => { const type = document.querySelector('#animalType').value; const category = document.querySelector('#animalCategory').value; const name = document.querySelector('#animalName').value.trim() || 'حيوان جديد'; if (cloud && cloudUser) await cloud.from('animals').insert({ kind:type, category, name, created_by:cloudUser.id }); data.animals[type]++; data.animals[category]++; const icons = { sheep:'🐑', chicken:'🐔', camel:'🐪' }; data.registry.unshift({ icon:icons[type], name, detail:`${category === 'male' ? 'ذكر' : category === 'female' ? 'أنثى' : 'صغير'} · أضيف الآن` }); await recordActivity('➕', `تمت إضافة ${name} للسجل`); document.querySelector('#animalName').value = ''; save(); render(); });
+document.querySelector('#clearActivity').addEventListener('click', async () => { data.activity = []; if (cloud && cloudUser) await cloud.from('activity').delete().not('id', 'is', null); save(); renderActivity(); });
 document.querySelector('#addStockButton').addEventListener('click', () => document.querySelector('#stockDialog').showModal());
-document.querySelector('#stockForm').addEventListener('submit', () => { const name = document.querySelector('#stockName').value.trim(); const amount = document.querySelector('#stockAmount').value.trim(); const percent = Math.max(0, Math.min(100, Number(document.querySelector('#stockPercent').value) || 0)); data.stock.unshift({ name, amount, percent }); data.activity.unshift({ icon:'📦', text:`تم تسجيل مخزون ${name}`, time:'الآن' }); document.querySelector('#stockForm').reset(); save(); render(); });
+document.querySelector('#stockForm').addEventListener('submit', async () => { const name = document.querySelector('#stockName').value.trim(); const amount = document.querySelector('#stockAmount').value.trim(); const percent = Math.max(0, Math.min(100, Number(document.querySelector('#stockPercent').value) || 0)); if (cloud && cloudUser) await cloud.from('stock_items').insert({ name, amount, remaining_percent:percent, updated_by:cloudUser.id }); data.stock.unshift({ name, amount, percent }); await recordActivity('📦', `تم تسجيل مخزون ${name}`); document.querySelector('#stockForm').reset(); save(); render(); });
 document.querySelector('#showAllAnimals').addEventListener('click', () => alert(`يوجد في السجل ${data.animals.sheep} من الغنم، ${data.animals.chicken} من الدجاج، و${data.animals.camel} من النوق.`));
+document.querySelector('#loginButton').addEventListener('click', async () => { if (!cloud) return alert('إعدادات الربط لم تصل بعد. إذا فتحت الموقع من الرابط المنشور، أعد تحميل الصفحة.'); if (cloudUser) { await cloud.auth.signOut(); cloudUser = null; updateLoginButton(); return; } document.querySelector('#loginDialog').showModal(); });
+document.querySelector('#loginForm').addEventListener('submit', async () => { if (!cloud) return; const email = document.querySelector('#loginEmail').value; const password = document.querySelector('#loginPassword').value; const result = await cloud.auth.signInWithPassword({ email, password }); if (result.error) { document.querySelector('#loginError').textContent = 'تعذر الدخول. تأكد من البريد وكلمة المرور.'; return; } cloudUser = result.data.user; updateLoginButton(); await loadCloudData(); });
+if (cloud) cloud.auth.getSession().then(async ({ data:session }) => { cloudUser = session.session?.user || null; updateLoginButton(); if (cloudUser) await loadCloudData(); });
+else updateLoginButton();
 render();

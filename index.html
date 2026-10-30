@@ -17,6 +17,7 @@
         </div>
         <div class="header-actions">
           <button class="icon-button" id="notificationButton" aria-label="التنبيهات">🔔<b></b></button>
+          <button class="login-button" id="loginButton">تسجيل الدخول</button>
           <div class="avatar">ع</div>
         </div>
       </header>
@@ -90,6 +91,19 @@
         <button class="primary-button" value="default">حفظ المخزون</button>
       </form>
     </dialog>
+    <dialog id="loginDialog">
+      <form method="dialog" id="loginForm">
+        <button class="close-button" value="cancel" aria-label="إغلاق">×</button>
+        <p class="eyebrow">الوصول المشترك</p><h2>تسجيل الدخول</h2>
+        <p class="muted login-hint">سجّل دخولك لمشاهدة تحديثات العزبة من أي جهاز.</p>
+        <label>البريد الإلكتروني<input id="loginEmail" type="email" required placeholder="name@example.com" /></label>
+        <label>كلمة المرور<input id="loginPassword" type="password" required minlength="6" /></label>
+        <button class="primary-button" value="default">دخول</button>
+        <p class="login-error" id="loginError"></p>
+      </form>
+    </dialog>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="supabase-config.js"></script>
     <script src="app.js"></script>
   </body>
 </html>
