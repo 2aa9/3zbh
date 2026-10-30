@@ -28,6 +28,7 @@
             <span class="status-pill"><i></i> آخر تحديث اليوم ٧:٤٥ ص</span>
             <h2>العزبة بخير اليوم</h2>
             <p>تم إنجاز ٥ من ٧ مهام. راجع التنبيهات قبل نهاية اليوم.</p>
+            <button class="hero-action" id="dailyUpdateButton">+ تسجيل تحديث اليوم</button>
           </div>
           <div class="hero-icon">🌴</div>
         </section>
@@ -89,6 +90,17 @@
         <label>الكمية<input id="stockAmount" required placeholder="مثال: ٣ أكياس" /></label>
         <label>النسبة المتبقية <input id="stockPercent" type="number" min="0" max="100" value="50" /></label>
         <button class="primary-button" value="default">حفظ المخزون</button>
+      </form>
+    </dialog>
+    <dialog id="dailyUpdateDialog">
+      <form method="dialog" id="dailyUpdateForm">
+        <button class="close-button" value="cancel" aria-label="إغلاق">×</button>
+        <p class="eyebrow">تحديث العامل</p><h2>ماذا حصل اليوم؟</h2>
+        <label>حالة العزبة<select id="dailyStatus"><option>كل شيء بخير</option><option>يوجد حيوان يحتاج متابعة</option><option>يوجد نقص في العلف أو الماء</option><option>تحتاج العزبة صيانة</option></select></label>
+        <label>ملاحظة<textarea id="dailyNote" rows="4" placeholder="اكتب ملاحظتك هنا..."></textarea></label>
+        <label>صورة اختيارية<input id="dailyPhoto" type="file" accept="image/*" /></label>
+        <img id="photoPreview" class="photo-preview" alt="معاينة الصورة" hidden />
+        <button class="primary-button" value="default">حفظ التحديث</button>
       </form>
     </dialog>
     <dialog id="loginDialog">
