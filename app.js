@@ -19,6 +19,9 @@ data.registry = data.registry || initialData.registry;
 data.stock = data.stock || initialData.stock;
 data.activity = data.activity || [];
 const save = () => localStorage.setItem('azbti-data', JSON.stringify(data));
+let language = localStorage.getItem('azbti-language') || 'ar';
+const translations = { ar:{ lang:'اردو', login:'تسجيل الدخول', update:'+ تسجيل تحديث اليوم', addStock:'+ تسجيل مخزون', clear:'مسح' }, ur:{ lang:'عربي', login:'لاگ اِن', update:'+ آج کی رپورٹ', addStock:'+ ذخیرہ درج کریں', clear:'صاف کریں' } };
+function applyLanguage() { const t = translations[language]; document.documentElement.lang = language === 'ur' ? 'ur' : 'ar'; document.querySelector('#languageButton').textContent = t.lang; document.querySelector('#loginButton').textContent = t.login; document.querySelector('#dailyUpdateButton').textContent = t.update; document.querySelector('#addStockButton').textContent = t.addStock; document.querySelector('#clearActivity').textContent = t.clear; }
 const cloudSettings = window.AZBTI_SUPABASE || {};
 const cloud = cloudSettings.url && cloudSettings.anonKey && window.supabase ? window.supabase.createClient(cloudSettings.url, cloudSettings.anonKey) : null;
 let cloudUser = null;
@@ -47,7 +50,7 @@ async function loadCloudData() {
   if (activity.data.length) data.activity = activity.data.map(a => ({ icon:a.icon, text:a.message, time:new Date(a.created_at).toLocaleDateString('ar-SA') }));
   save(); render();
 }
-function updateLoginButton() { document.querySelector('#loginButton').textContent = cloudUser ? 'تسجيل الخروج' : 'تسجيل الدخول'; }
+function updateLoginButton() { document.querySelector('#loginButton').textContent = cloudUser ? (language === 'ur' ? 'لاگ آؤٹ' : 'تسجيل الخروج') : translations[language].login; }
 
 function renderStats() {
   const stats = [{ key:'sheep', icon:'🐑', label:'الغنم', value:data.animals.sheep }, { key:'chicken', icon:'🐔', label:'الدجاج', value:data.animals.chicken }, { key:'camel', icon:'🐪', label:'النوق', value:data.animals.camel }, { key:'trees', icon:'🌴', label:'النخل والأشجار', value:data.animals.trees }, { icon:'👥', label:'الذكور والإناث', value:`${data.animals.male} / ${data.animals.female}` }];
@@ -76,6 +79,8 @@ document.querySelector('#dailyPhoto').addEventListener('change', event => { cons
 document.querySelector('#dailyUpdateForm').addEventListener('submit', async () => { const status = document.querySelector('#dailyStatus').value; const note = document.querySelector('#dailyNote').value.trim(); const preview = document.querySelector('#photoPreview'); const message = note ? `${status}: ${note}` : status; await recordActivity('📷', message); if (preview.src && !preview.hidden) data.activity[0].photo = preview.src; document.querySelector('#dailyUpdateForm').reset(); preview.hidden = true; save(); renderActivity(); });
 document.querySelector('#loginButton').addEventListener('click', async () => { if (cloudUser && cloud) { await cloud.auth.signOut(); cloudUser = null; updateLoginButton(); return; } document.querySelector('#loginError').textContent = cloud ? '' : 'إعدادات الربط لم تصل بعد. حدّث الصفحة بعد اكتمال النشر.'; document.querySelector('#loginDialog').showModal(); });
 document.querySelector('#loginForm').addEventListener('submit', async () => { if (!cloud) { document.querySelector('#loginError').textContent = 'لم يتم ربط الموقع بقاعدة البيانات بعد.'; return; } const email = document.querySelector('#loginEmail').value; const password = document.querySelector('#loginPassword').value; const result = await cloud.auth.signInWithPassword({ email, password }); if (result.error) { document.querySelector('#loginError').textContent = 'تعذر الدخول. تأكد من البريد وكلمة المرور.'; return; } cloudUser = result.data.user; updateLoginButton(); await loadCloudData(); });
+document.querySelector('#languageButton').addEventListener('click', () => { language = language === 'ar' ? 'ur' : 'ar'; localStorage.setItem('azbti-language', language); applyLanguage(); });
 if (cloud) cloud.auth.getSession().then(async ({ data:session }) => { cloudUser = session.session?.user || null; updateLoginButton(); if (cloudUser) await loadCloudData(); });
 else updateLoginButton();
+applyLanguage();
 render();
