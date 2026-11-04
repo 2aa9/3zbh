@@ -2,6 +2,18 @@
 
 A rebuilt, Arabic/Urdu, offline-first farm workspace. No build dependencies, CDN scripts, accounts or database setup are required to use this version.
 
+## Owner ↔ worker workspace
+
+Open `#worker` for a working mobile app embedded in the owner screen. It is an actual same-origin frame with its own Urdu/Arabic selection and navigation, not a device mockup image. `#field` opens the worker app on its own.
+
+The workflow is: dispatch a bilingual, location-linked task → worker starts it → checks individual steps → submits a required photo and written result → owner approves or returns it for correction → worker resubmits. State transitions are checked, and a timestamped history is retained. Messages and read receipts use the same local record. The embedded phone is retained during owner refreshes so incoming updates do not erase an unfinished worker form.
+
+Animal passports add a photo, health history, actual weight measurements and chart, parents, purpose, location and linked tasks. Water/feed monitoring now has timestamped manual readings, tank capacity and estimated amount, real reading history, and an inventory movement ledger that rejects overdraws.
+
+These are functional **local workflows**. Separate tabs/frames under the same browser origin share updates. Independent phones are not networked or authenticated by this version.
+
+[Screenshots, review notes and tested flows](docs/REVIEW.md)
+
 ## Run
 
 ```sh
@@ -38,12 +50,16 @@ GitHub Actions deploys only dist/ to Pages. SQL, tests, documentation and config
 
 ## Browser validation
 
-With Playwright and Chromium available, start the server and run:
+For repeatable checks, install the pinned development tools with `npm ci`, install Chromium with `npx playwright install chromium` (or use `CHROMIUM_PATH` for a system browser), start the server, and run:
 
 ```sh
-node tests/browser.cjs
+npm test
 ```
 
 Tests exercise animal creation/editing, duplicate tags, cancellation, reload persistence, water readings, stock, daily tasks, health, expenses, facilities, location, Urdu persistence, image compression, escaped report text, backup import/export, malformed imports, nine routes and mobile overflow.
+
+The operations suite also exercises the actual iframe, return-for-correction/resubmission, approval, messaging/read receipts, independent locales, passport photos/measurements, and a new tab. The inventory suite checks precise movement arithmetic, insufficient stock, reading history, automatic backup before clearing data and offline embedded operation.
+
+The accessibility suite uses the pinned `@axe-core/playwright` and runs sampled automated WCAG A/AA checks. `AXE_MODULE_PATH` can point to another installed package, and `APP_URL` can target the built artifact. This is not a full accessibility certification. GitHub Pages now runs all four suites before uploading a deployment, so a failing workflow test blocks publication.
 
 The installation plan and sources actually inspected are in [FARM_PLAN.md](FARM_PLAN.md).

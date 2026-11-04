@@ -1,9 +1,11 @@
-const CACHE = "3zbh-shell-v3";
+const CACHE = "3zbh-shell-v4";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./operations.js",
+  "./operations.css",
   "./icon.svg",
   "./manifest.webmanifest",
   "./assets/fonts/ibm-plex-sans-arabic-arabic-400-normal.woff2",

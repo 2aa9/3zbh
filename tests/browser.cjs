@@ -3,11 +3,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs/promises");
 
 (async () => {
-  const browser = await chromium.launch({
-    executablePath: process.env.CHROMIUM_PATH || "/usr/bin/chromium",
-    headless: true,
-    args: ["--no-sandbox"],
-  });
+  const browser = await chromium.launch(require('./runtime.cjs').launchOptions);
   const context = await browser.newContext({
     viewport: { width: 1440, height: 1050 },
   });
@@ -113,16 +109,14 @@ const fs = require("node:fs/promises");
   assert.equal(await page.locator("html").getAttribute("lang"), "ur");
   await action("update").click();
   await field("note", '<img src=x onerror="window.xss=1">');
-  await page
-    .locator('[name="photo"]')
-    .setInputFiles({
-      name: "test.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(
-        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
-        "base64",
-      ),
-    });
+  await page.locator('[name="photo"]').setInputFiles({
+    name: "test.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
   await page.locator("#preview").waitFor({ state: "visible" });
   await submit();
   assert.match((await state()).activity[0].photo, /^data:image\/jpeg;base64,/);
@@ -134,23 +128,19 @@ const fs = require("node:fs/promises");
   const backup = JSON.parse(await fs.readFile(await downloaded.path(), "utf8"));
   assert.equal(backup.animals.length, 38);
   await action("import").click();
-  await page
-    .locator('[name="file"]')
-    .setInputFiles({
-      name: "backup.json",
-      mimeType: "application/json",
-      buffer: Buffer.from(JSON.stringify(backup)),
-    });
+  await page.locator('[name="file"]').setInputFiles({
+    name: "backup.json",
+    mimeType: "application/json",
+    buffer: Buffer.from(JSON.stringify(backup)),
+  });
   await submit();
   assert.equal((await state()).animals.length, 38);
   await action("import").click();
-  await page
-    .locator('[name="file"]')
-    .setInputFiles({
-      name: "bad.json",
-      mimeType: "application/json",
-      buffer: Buffer.from('{"version":3}'),
-    });
+  await page.locator('[name="file"]').setInputFiles({
+    name: "bad.json",
+    mimeType: "application/json",
+    buffer: Buffer.from('{"version":3}'),
+  });
   await submit();
   assert.notEqual(await page.locator(".form-error").innerText(), "");
   await page.locator('dialog [data-action="close"]').first().click();

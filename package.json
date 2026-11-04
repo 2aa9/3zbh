@@ -1,0 +1,15 @@
+{
+  "name": "3zbh",
+  "version": "4.0.0",
+  "private": true,
+  "description": "Arabic and Urdu farm operations workspace",
+  "scripts": {
+    "build": "node --check app.js && node --check operations.js && node scripts/build.mjs",
+    "test": "node tests/browser.cjs && node tests/operations.cjs && node tests/inventory.cjs && node tests/accessibility.cjs"
+  },
+  "engines": { "node": ">=22" },
+  "devDependencies": {
+    "@axe-core/playwright": "4.11.1",
+    "playwright": "1.62.1"
+  }
+}

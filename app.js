@@ -1,7 +1,12 @@
 "use strict";
 // 3zbh: offline-first workspace. No simulated reading is presented as a live sensor.
 const KEY = "3zbh-workspace-v3";
-let lang = localStorage.getItem("3zbh-language") === "ur" ? "ur" : "ar";
+let lang =
+  location.hash === "#field"
+    ? localStorage.getItem("3zbh-field-language") || "ur"
+    : localStorage.getItem("3zbh-language") === "ur"
+      ? "ur"
+      : "ar";
 const $ = (s) => document.querySelector(s);
 const esc = (v) =>
   String(v ?? "").replace(
@@ -428,7 +433,7 @@ function shell() {
     navLink("map", "خريطة العزبة", "نقشہ", "map") +
     navLink("health", "الصحة والرعاية", "صحت اور دیکھ بھال", "heart") +
     navLink("reports", "التقارير والمصاريف", "رپورٹس اور اخراجات", "chart") +
-    navLink("worker", "واجهة العامل", "مزدور کی سکرین", "users") +
+    navLink("worker", "مركز العامل", "مزدور کا مرکز", "users") +
     navLink("settings", "الإعدادات", "ترتیبات", "settings") +
     '</nav><div class="sidebar-bottom"><button class="switch-role" data-action="worker">' +
     icon("users") +
@@ -549,7 +554,7 @@ function farmSvg(hero = false) {
     cleanwater: tr("ماء نظيف", "صاف پانی"),
   };
   return (
-    '<svg class="farm-map" viewBox="0 0 750 480" role="img" aria-label="' +
+    '<svg class="farm-map" viewBox="0 0 750 480" role="group" aria-label="' +
     tr(
       "مخطط العزبة حسب الصورة المرفقة",
       "فراہم کردہ تصویر کے مطابق باڑے کا نقشہ",
@@ -1301,7 +1306,7 @@ function expenseLabel(c) {
 function workerPage() {
   return (
     title(
-      "واجهة العامل",
+      "مركز العامل",
       "مزدور کی سکرین",
       tr(
         "أزرار واضحة، خطوات أقل، وتقرير يصل لسجل العزبة.",
@@ -1457,21 +1462,32 @@ function settingsPage() {
   );
 }
 function render() {
+  ensureOperations();
+  document.body.classList.toggle("field-mode", route === "field");
   if (state.taskDay !== today()) {
     state.tasks.forEach((t) => (t.done = false));
     state.taskDay = today();
     persist();
   }
   shell();
+  if (route.startsWith("animal/")) {
+    document.querySelector("#main").innerHTML = animalPassport(route.slice(7));
+    return;
+  }
+  if (route === "worker" && document.querySelector("#workerPhone")) {
+    refreshWorkerHub();
+    return;
+  }
   const pages = {
-    overview,
+    overview: commandOverview,
     animals: animalsPage,
-    sensors: sensorsPage,
+    sensors: sensorWorkbench,
     tasks: tasksPage,
     map: mapPage,
     health: healthPage,
     reports: reportsPage,
-    worker: workerPage,
+    worker: workerHub,
+    field: fieldPage,
     settings: settingsPage,
   };
   if (!pages[route]) route = "overview";
@@ -1649,6 +1665,13 @@ function animalDetail(id) {
       '</div><p class="hint">' +
       esc(a.notes || tr("لا توجد ملاحظات إضافية", "کوئی اضافی مشاہدہ نہیں")) +
       '</p><div class="row">' +
+      opButton(
+        tr("الملف الكامل", "مکمل فائل"),
+        "passport",
+        "sheep",
+        id,
+        "secondary",
+      ) +
       btn(
         tr("تعديل الملف", "فائل بدلیں"),
         "animal",
@@ -2166,7 +2189,10 @@ const actions = {
   close: () => $("#dialog").close(),
   language: () => {
     lang = lang === "ar" ? "ur" : "ar";
-    localStorage.setItem("3zbh-language", lang);
+    localStorage.setItem(
+      route === "field" ? "3zbh-field-language" : "3zbh-language",
+      lang,
+    );
     render();
   },
   worker: () => (location.hash = "worker"),
@@ -2214,6 +2240,13 @@ const actions = {
     state.health = [];
     state.expenses = [];
     state.stock = [];
+    state.ops = {
+      version: 1,
+      jobs: [],
+      messages: [],
+      events: [],
+      worker: { name: "العامل", ur: "مزدور" },
+    };
     state.devices.forEach((d) => {
       d.value = null;
       d.source = "manual";
@@ -2276,6 +2309,8 @@ document.addEventListener("submit", async (e) => {
   const before = JSON.stringify(state);
   const submit = f.querySelector("[type=submit]");
   if (submit) submit.disabled = true;
+  if (f.querySelector(".form-error"))
+    f.querySelector(".form-error").textContent = "";
   try {
     if (f.getAttribute("id") === "animalForm") {
       if (state.animals.some((a) => a.tag === v.tag.trim() && a.id !== v.id))
@@ -2285,13 +2320,15 @@ document.addEventListener("submit", async (e) => {
             "شناختی نمبر پہلے موجود ہے۔ دوسرا نمبر لکھیں۔",
           ),
         );
+      const existingAnimal = state.animals.find((a) => a.id === v.id);
       const a = {
+        ...existingAnimal,
         ...v,
         id: v.id || uid(),
         tag: v.tag.trim(),
         name: v.name.trim(),
         weight: v.weight ? Number(v.weight) : null,
-        createdAt: stamp(),
+        createdAt: existingAnimal?.createdAt || stamp(),
       };
       if (!a.tag) throw Error(tr("أدخل رقم العلامة", "شناختی نمبر درج کریں"));
       const i = state.animals.findIndex((x) => x.id === v.id);
@@ -2321,6 +2358,14 @@ document.addEventListener("submit", async (e) => {
         "ریڈنگ بدلی " + deviceText(d) + ": " + d.value + "%",
         "drop",
       );
+      state.ops.readings = state.ops.readings || [];
+      state.ops.readings.push({
+        id: uid(),
+        deviceId: d.id,
+        value: d.value,
+        source: "manual",
+        at: stamp(),
+      });
     } else if (f.getAttribute("id") === "stockForm") {
       const s = {
         ...v,
@@ -2450,6 +2495,23 @@ function validateBackup(s) {
   )
     fail();
   if (
+    s.animals.some(
+      (a) =>
+        (a.photo &&
+          !/^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(a.photo)) ||
+        (a.weights &&
+          (!Array.isArray(a.weights) ||
+            a.weights.some(
+              (w) =>
+                !Number.isFinite(w.kg) ||
+                w.kg <= 0 ||
+                w.kg > 2000 ||
+                !Number.isFinite(new Date(w.at).getTime()),
+            ))),
+    )
+  )
+    fail();
+  if (
     s.devices.some(
       (d) =>
         !d.id ||
@@ -2483,9 +2545,16 @@ function validateBackup(s) {
     )
   )
     fail();
+  if (s.ops) validateOperations(s.ops);
 }
 window.addEventListener("hashchange", () => {
+  const wasField = route === "field";
   route = location.hash.slice(1) || "overview";
+  if (wasField !== (route === "field"))
+    lang =
+      localStorage.getItem(
+        route === "field" ? "3zbh-field-language" : "3zbh-language",
+      ) || (route === "field" ? "ur" : "ar");
   render();
   window.scrollTo(0, 0);
 });

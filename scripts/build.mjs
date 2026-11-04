@@ -8,6 +8,8 @@ for (const file of [
   "index.html",
   "styles.css",
   "app.js",
+  "operations.js",
+  "operations.css",
   "icon.svg",
   "manifest.webmanifest",
   "sw.js",
