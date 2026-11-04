@@ -1,122 +1,27 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1f6f52" />
-    <title>عزبتي | إدارة العزبة</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#143e32" />
+    <meta
+      name="description"
+      content="3zbh — مساحة واحدة للعزبة والحلال والعامل والماء والعلف."
+    />
+    <title>3zbh — عزبتك، قدامك</title>
+    <link rel="icon" type="image/svg+xml" href="icon.svg" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
-      <header class="topbar">
-        <div>
-          <p class="eyebrow">إدارة العزبة</p>
-          <h1>عزبتي <span>👋</span></h1>
-          <p class="muted">صباح الخير يا علي، هذه خلاصة وضع العزبة اليوم.</p>
-        </div>
-        <div class="header-actions">
-          <button class="language-button" id="languageButton">اردو</button>
-          <button class="icon-button" id="notificationButton" aria-label="التنبيهات">🔔<b></b></button>
-          <button class="login-button" id="loginButton">تسجيل الدخول</button>
-          <div class="avatar">ع</div>
-        </div>
-      </header>
-
-      <main>
-        <section class="hero-card">
-          <div>
-            <span class="status-pill"><i></i> آخر تحديث اليوم ٧:٤٥ ص</span>
-            <h2>العزبة بخير اليوم</h2>
-            <p>تم إنجاز ٥ من ٧ مهام. راجع التنبيهات قبل نهاية اليوم.</p>
-            <button class="hero-action" id="dailyUpdateButton">+ تسجيل تحديث اليوم</button>
-          </div>
-          <div class="hero-icon">🌴</div>
-        </section>
-
-        <section class="section-heading">
-          <div><p class="eyebrow">ملخص سريع</p><h2>موجودات العزبة</h2></div>
-          <button class="text-button" id="addAnimalButton">+ إضافة</button>
-        </section>
-
-        <section class="stat-grid" id="stats"></section>
-
-        <section class="panel registry-panel" id="animals">
-          <div class="panel-heading"><div><p class="eyebrow">السجل التفصيلي</p><h2>حلال العزبة</h2></div><button class="text-button" id="showAllAnimals">عرض الكل</button></div>
-          <div id="animalRegistry" class="animal-registry"></div>
-        </section>
-
-        <div class="content-grid">
-          <section class="panel tasks-panel">
-            <div class="panel-heading"><div><p class="eyebrow">متابعة العامل</p><h2>مهام اليوم</h2></div><span class="counter" id="taskCounter"></span></div>
-            <div id="tasks" class="task-list"></div>
-          </section>
-
-          <section class="panel feed-panel">
-            <div class="panel-heading"><div><p class="eyebrow">المخزون</p><h2>الأعلاف والماء</h2></div><button class="dots">•••</button></div>
-            <div id="feedStock" class="feed-list"></div>
-            <button class="outline-button" id="addStockButton">+ تسجيل مخزون</button>
-          </section>
-        </div>
-
-        <section class="panel activity-panel">
-          <div class="panel-heading"><div><p class="eyebrow">سجل العزبة</p><h2>آخر التحديثات</h2></div><button class="text-button" id="clearActivity">مسح</button></div>
-          <div id="activity" class="activity-list"></div>
-        </section>
-      </main>
-
-      <nav class="bottom-nav" aria-label="التنقل الرئيسي">
-        <a class="active" href="#"><span>⌂</span>الرئيسية</a>
-        <a href="#animals"><span>🐑</span>الحلال</a>
-        <a href="#tasks"><span>✓</span>المهام</a>
-        <a href="#reports"><span>▥</span>التقارير</a>
-      </nav>
+    <aside id="sidebar" class="sidebar"></aside>
+    <div class="workspace">
+      <header id="topbar" class="topbar"></header>
+      <main id="main" tabindex="-1"></main>
+      <footer id="footer"></footer>
     </div>
-
-    <dialog id="addAnimalDialog">
-      <form method="dialog" id="animalForm">
-        <button class="close-button" value="cancel" aria-label="إغلاق">×</button>
-        <p class="eyebrow">تحديث السجل</p><h2>إضافة حيوان</h2>
-        <label>النوع<select id="animalType"><option value="sheep">غنم</option><option value="chicken">دجاج</option><option value="camel">ناقة</option></select></label>
-        <label>التصنيف<select id="animalCategory"><option value="male">ذكر</option><option value="female">أنثى</option><option value="young">صغير</option></select></label>
-        <label>الاسم أو العلامة <input id="animalName" placeholder="مثال: أم الخير أو رقم ٢٤" /></label>
-        <button class="primary-button" value="default">حفظ الإضافة</button>
-      </form>
-    </dialog>
-    <dialog id="stockDialog">
-      <form method="dialog" id="stockForm">
-        <button class="close-button" value="cancel" aria-label="إغلاق">×</button>
-        <p class="eyebrow">المخزون</p><h2>تسجيل علف أو ماء</h2>
-        <label>الصنف<input id="stockName" required placeholder="مثال: برسيم" /></label>
-        <label>الكمية<input id="stockAmount" required placeholder="مثال: ٣ أكياس" /></label>
-        <label>النسبة المتبقية <input id="stockPercent" type="number" min="0" max="100" value="50" /></label>
-        <button class="primary-button" value="default">حفظ المخزون</button>
-      </form>
-    </dialog>
-    <dialog id="dailyUpdateDialog">
-      <form method="dialog" id="dailyUpdateForm">
-        <button class="close-button" value="cancel" aria-label="إغلاق">×</button>
-        <p class="eyebrow">تحديث العامل</p><h2>ماذا حصل اليوم؟</h2>
-        <label>حالة العزبة<select id="dailyStatus"><option>كل شيء بخير</option><option>يوجد حيوان يحتاج متابعة</option><option>يوجد نقص في العلف أو الماء</option><option>تحتاج العزبة صيانة</option></select></label>
-        <label>ملاحظة<textarea id="dailyNote" rows="4" placeholder="اكتب ملاحظتك هنا..."></textarea></label>
-        <label>صورة اختيارية<input id="dailyPhoto" type="file" accept="image/*" /></label>
-        <img id="photoPreview" class="photo-preview" alt="معاينة الصورة" hidden />
-        <button class="primary-button" value="default">حفظ التحديث</button>
-      </form>
-    </dialog>
-    <dialog id="loginDialog">
-      <form method="dialog" id="loginForm">
-        <button class="close-button" value="cancel" aria-label="إغلاق">×</button>
-        <p class="eyebrow">الوصول المشترك</p><h2>تسجيل الدخول</h2>
-        <p class="muted login-hint">سجّل دخولك لمشاهدة تحديثات العزبة من أي جهاز.</p>
-        <label>البريد الإلكتروني<input id="loginEmail" type="email" required placeholder="name@example.com" /></label>
-        <label>كلمة المرور<input id="loginPassword" type="password" required minlength="6" /></label>
-        <button class="primary-button" value="default">دخول</button>
-        <p class="login-error" id="loginError"></p>
-      </form>
-    </dialog>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="supabase-config.js"></script>
+    <dialog id="dialog"><div id="dialogContent"></div></dialog>
+    <div id="toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script>
   </body>
 </html>

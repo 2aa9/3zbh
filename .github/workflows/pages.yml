@@ -27,13 +27,14 @@ jobs:
         uses: actions/configure-pages@v5
         with:
           enablement: true
-      - name: Create Supabase config
-        run: |
-          printf 'window.AZBTI_SUPABASE = { url: "%s", anonKey: "%s" };\n' "${{ secrets.SUPABASE_URL }}" "${{ secrets.SUPABASE_ANON_KEY }}" > supabase-config.js
+      - name: Validate JavaScript
+        run: node --check app.js
+      - name: Build public assets
+        run: node scripts/build.mjs
       - name: Upload site
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: dist
       - name: Deploy
         id: deployment
         uses: actions/deploy-pages@v4
